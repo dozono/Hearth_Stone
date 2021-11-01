@@ -1,0 +1,20 @@
+{
+  "chaneling": {
+    "subtitle": "hearthstone.chaneling.subtitle",
+    "sounds": [
+      {
+        "name": "hearthstone:chaneling",
+        "stream": true
+      }
+    ]
+  },
+  "teleport": {
+    "subtitle": "hearthstone.teleport.subtitle",
+    "sounds": [
+      {
+        "name": "hearthstone:teleport",
+        "stream": true
+      }
+    ]
+  }
+}

@@ -26,8 +26,8 @@ public class HeartStoneGui extends AbstractGui {
         Integer prog = mc.player.getEntityData().get(HearthStoneMod.DATA_PLAYER_HEARTH_STONE_CHARGE);
         if (prog > 0) {
             mc.getTextureManager().bind(new ResourceLocation(HearthStoneMod.MODID, "textures/gui/progress_bar_gui.png"));
-            int x = 10;
-            int y = 100;
+            int x = 5;
+            int y = 217;
             this.blit(matrixStack, x, y, 0, 0, 128, 11);
             this.blit(matrixStack, x, y + 1, 0, 12, (int) (109 * prog / 80D), 11);
         }

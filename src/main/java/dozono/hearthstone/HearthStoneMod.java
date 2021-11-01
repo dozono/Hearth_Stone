@@ -12,9 +12,11 @@ import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.util.*;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
+import net.minecraft.world.gen.Heightmap;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.storage.IWorldInfo;
 import net.minecraftforge.api.distmarker.Dist;
@@ -24,6 +26,7 @@ import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.entity.EntityEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.RegistryObject;
@@ -37,6 +40,7 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Optional;
+import java.util.Random;
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod(HearthStoneMod.MODID)
@@ -58,6 +62,11 @@ public class HearthStoneMod {
 
     private final DeferredRegister<Item> itemRegister = DeferredRegister.create(Item.class, MODID);
 
+    public static final DeferredRegister<SoundEvent> SOUND_REGISTER = DeferredRegister.create(SoundEvent.class, MODID);
+
+    public static final RegistryObject<SoundEvent> CHANELING_SOUND = SOUND_REGISTER.register("chaneling", () -> new SoundEvent(new ResourceLocation(MODID, "chaneling")));
+    public static final RegistryObject<SoundEvent> TELEPORT_SOUND = SOUND_REGISTER.register("teleport", () -> new SoundEvent(new ResourceLocation(MODID, "teleport")));
+
     public final RegistryObject<Item> ITEM_HEARTH_STONE = itemRegister.register("hearth_stone",
             () -> new Item(new Item.Properties().tab(ItemGroup.TAB_MISC)) {
                 @Override
@@ -72,12 +81,13 @@ public class HearthStoneMod {
 
                 @Override
                 public void onUsingTick(ItemStack stack, LivingEntity player, int count) {
+//                    player.level.playSound(null, player, HearthStoneMod.CHANELING_SOUND.get(), SoundCategory.AMBIENT, 1, 1);
+                    player.playSound(HearthStoneMod.CHANELING_SOUND.get(), 0.6F, 1);
                     if (player.level.isClientSide) {
                         return;
                     }
                     Integer last = player.getEntityData().get(DATA_PLAYER_HEARTH_STONE_CHARGE);
                     player.getEntityData().set(DATA_PLAYER_HEARTH_STONE_CHARGE, last + 1);
-
                 }
 
                 @Override
@@ -91,13 +101,17 @@ public class HearthStoneMod {
 //                                        BlockPos pos = new BlockPos(levelData.getXSpawn(), levelData.getYSpawn(), levelData.getZSpawn());
                                         if (livingEntity instanceof ServerPlayerEntity) {
                                             ServerPlayerEntity player = (ServerPlayerEntity) livingEntity;
-                                            return player.getSleepingPos()
-                                                    .map(p -> PlayerEntity.findRespawnPositionAndUseSpawnBlock(((ServerWorld) levelData), p, player.getRespawnAngle(), true, true).orElse(Vector3d.ZERO))
-                                                    .orElse(Vector3d.ZERO);
+                                            int x = player.level.random.nextInt(1000) - 500;
+                                            x = x >= 0 ? x + 100 : x - 100;
+                                            int z = player.level.random.nextInt(1000) - 500;
+                                            z = z >= 0 ? z + 100 : z - 100;
+                                            player.level.getBlockState(new BlockPos(x, 0, z));
+                                            int y = player.level.getHeight(Heightmap.Type.WORLD_SURFACE, x, z);
+                                            return new Vector3d(x + 0.5, y + 1, z + 0.5);
                                         }
                                         return Vector3d.ZERO;
                                     });
-
+                            livingEntity.level.playSound(null, livingEntity, HearthStoneMod.TELEPORT_SOUND.get(), SoundCategory.PLAYERS, 1, 1);
                             livingEntity.teleportTo(blockPos.x(), blockPos.y(), blockPos.z());
                         }
                     });
@@ -128,6 +142,7 @@ public class HearthStoneMod {
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
 
         itemRegister.register(FMLJavaModLoadingContext.get().getModEventBus());
+        SOUND_REGISTER.register(FMLJavaModLoadingContext.get().getModEventBus());
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
 
